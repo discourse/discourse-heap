@@ -8,7 +8,7 @@ require 'logger'
 class HeapMiddleware
   def initialize(app)
     @app = app
-    @logger = Logger.new('/tmp/gc.slots.log')
+    @logger = Logger.new('/tmp/gc.heaps.log')
   end
 
   def call(env)
@@ -16,12 +16,12 @@ class HeapMiddleware
     result = @app.call(env)
     after = GC.stat
 
-    slot_diff = (after[:heap_live_slots] || 0) - (before[:heap_live_slots] || 0)
+    heap_diff = (after[:heap_used] || 0) - (before[:heap_used] || 0)
 
-    if slot_diff > 100
+    if heap_diff > 100
       qp = env['QUERY_STRING']
       qp = qp.present? ? "?#{qp}" : ""
-      @logger.info("#{env['REQUEST_METHOD']} #{env['REQUEST_PATH']}#{qp} #{slot_diff}\n")
+      @logger.info("#{env['REQUEST_METHOD']} #{env['REQUEST_PATH']}#{qp} #{heap_diff}\n")
     end
 
     result
